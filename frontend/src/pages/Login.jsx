@@ -137,7 +137,7 @@ export default function Login() {
           <Link component={RouterLink} to="/" variant="body2">
             Página Inicial
           </Link>
-          <Link component={RouterLink} to="/forgot-password" variant="body2">
+          <Link component={RouterLink} to="/ForgotPassword" variant="body2">
             Esqueceu a senha?
           </Link>
         </Stack>

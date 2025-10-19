@@ -13,7 +13,8 @@ import Welcome from './pages/Welcome.jsx';
 import Login from './pages/Login.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Emprestimos from './pages/Emprestimos.jsx';
-import Register from './pages/Register.jsx'; // <-- 1. IMPORTE A NOVA PÁGINA
+import Register from './pages/Register.jsx';
+import ForgotPassword from './pages/ForgotPassword.jsx';
 
 // --- CONFIGURAÇÃO DAS ROTAS ---
 const router = createBrowserRouter([
@@ -25,9 +26,13 @@ const router = createBrowserRouter([
     path: "/login",
     element: <CenteredLayout><Login /></CenteredLayout>,
   },
-  { // <-- 2. ADICIONE A NOVA ROTA
+  { 
     path: "/register",
     element: <CenteredLayout><Register /></CenteredLayout>,
+  },
+  {
+    path: "/ForgotPassword",
+    element: <CenteredLayout><ForgotPassword /></CenteredLayout>,
   },
   {
     path: "/dashboard",

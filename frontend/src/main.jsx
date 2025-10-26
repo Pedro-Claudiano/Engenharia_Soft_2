@@ -15,6 +15,7 @@ import Dashboard from './pages/Dashboard.jsx';
 import Emprestimos from './pages/Emprestimos.jsx';
 import Register from './pages/Register.jsx';
 import ForgotPassword from './pages/ForgotPassword.jsx';
+import NewBook from './pages/newBook.jsx';
 
 // --- CONFIGURAÇÃO DAS ROTAS ---
 const router = createBrowserRouter([
@@ -41,6 +42,10 @@ const router = createBrowserRouter([
   {
     path: "/emprestimos",
     element: <Emprestimos />,
+  },
+  {
+    path: "/cadastrar-livro",
+    element: <NewBook />, // Não usa o CenteredLayout pois tem seu próprio AppBar
   },
 ]);
 

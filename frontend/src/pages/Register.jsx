@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { apiService } from '../services/apiService'
 
 export default function Register() {
   const [email, setEmail] = useState('');
@@ -39,8 +40,11 @@ export default function Register() {
     setMessage('');
     
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      console.log('Usuário registrado:', { email });
+      // 2. LÓGICA DE SIMULAÇÃO REMOVIDA
+      // Agora apenas chama o apiService
+      await apiService.register(email, password);
+
+      // 3. Sucesso!
       setMessage({ type: 'success', text: 'Conta criada com sucesso! Redirecionando para o login...' });
       
       setTimeout(() => {
@@ -48,10 +52,13 @@ export default function Register() {
       }, 2000);
 
     } catch (error) {
+      // 4. O 'catch' pega o erro lançado pelo apiService
       console.error("Erro ao tentar registrar:", error);
-      setMessage({ type: 'error', text: 'Ocorreu um erro ao criar a conta.' });
-      setIsLoading(false);
+      setMessage({ type: 'error', text: error.message || 'Ocorreu um erro ao criar a conta.' });
+      setIsLoading(false); // Garante que o loading pare em caso de erro
     }
+    // 'finally' foi removido pois o loading só deve parar no sucesso
+    // após o timeout, ou imediatamente no erro.
   };
 
   return (

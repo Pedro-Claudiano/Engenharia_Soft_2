@@ -19,6 +19,7 @@ import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { apiService } from '../services/apiService';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -37,16 +38,20 @@ export default function Login() {
       setMessage({ type: 'error', text: 'Por favor, preencha todos os campos.' });
       return;
     }
+
     setIsLoading(true);
     setMessage('');
+
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      if (email === "leitor@email.com" && password === "senha123") {
-          navigate('/dashboard');
-      } else {
-          throw new Error('Email ou senha inválidos.');
-      }
+      // 2. LÓGICA DE SIMULAÇÃO REMOVIDA
+      // Agora apenas chama o apiService
+      await apiService.login(email, password);
+      
+      // 3. Sucesso! Navega para o dashboard
+      navigate('/dashboard');
+
     } catch (error) {
+      // 4. O 'catch' pega o erro lançado pelo apiService
       setMessage({ type: 'error', text: error.message });
     } finally {
       setIsLoading(false);

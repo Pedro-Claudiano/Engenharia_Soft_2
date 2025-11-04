@@ -52,8 +52,9 @@ export default function Dashboard() {
     <Box sx={{ display: 'flex' }}>
       <AppBar position="fixed">
         <Toolbar>
+          {/* --- TÍTULO ATUALIZADO --- */}
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            Painel Administrativo
+            Painel do Bibliotecário
           </Typography>
           <IconButton color="inherit" onClick={handleLogout} aria-label="sair">
             <LogoutIcon />
@@ -65,17 +66,19 @@ export default function Dashboard() {
         component="main"
         sx={{
           flexGrow: 1,
-          bgcolor: 'grey.100',
+          bgcolor: 'grey.100', // Fundo cinza claro
           p: 3,
-          mt: 8,
+          mt: 8, // Margem do topo para a AppBar
           minHeight: '100vh',
           boxSizing: 'border-box'
         }}
       >
+        {/* --- SAUDAÇÃO ATUALIZADA --- */}
         <Typography variant="h4" gutterBottom sx={{ fontWeight: 600 }}>
-          Bem-vindo, Administrador!
+          Bem-vindo, Bibliotecário!
         </Typography>
 
+        {/* Cards de estatísticas */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
           {stats.map((stat, index) => (
             <Grid item xs={12} sm={6} md={4} key={index}>
@@ -99,6 +102,7 @@ export default function Dashboard() {
           Ações Rápidas
         </Typography>
         
+        {/* Card de Ações Rápidas */}
         <Paper elevation={3} sx={{ p: { xs: 2, md: 3 }, borderRadius: 2 }}>
           <Grid container spacing={3}>
             <Grid item xs={12} md={4}>
@@ -170,3 +174,4 @@ export default function Dashboard() {
     </Box>
   );
 }
+

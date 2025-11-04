@@ -15,18 +15,17 @@ import {
 } from '@mui/material';
 import LogoutIcon from '@mui/icons-material/Logout';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import LibraryAddIcon from '@mui/icons-material/LibraryAdd'; // Ícone para "Adicionar Livro"
+import LibraryAddIcon from '@mui/icons-material/LibraryAdd';
 import { useNavigate } from 'react-router-dom';
+import { apiService } from '../services/apiService'; // 1. IMPORTA A FACHADA
 
 export default function CadastrarLivro() {
   const navigate = useNavigate();
 
-  // Estados do formulário
   const [titulo, setTitulo] = useState('');
   const [autor, setAutor] = useState('');
   const [isbn, setIsbn] = useState('');
   
-  // Estados de controle
   const [message, setMessage] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -38,7 +37,6 @@ export default function CadastrarLivro() {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    // Validação
     if (!titulo || !autor || !isbn) {
       setMessage({ type: 'error', text: 'Por favor, preencha todos os campos.' });
       return;
@@ -48,13 +46,9 @@ export default function CadastrarLivro() {
     setMessage(null);
 
     try {
-      // Simulação de chamada de API
-      // Substitua isso pela sua lógica de 'fetch'
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // const response = await fetch('/api/livros/cadastrar', { ... });
-      // const data = await response.json();
-      // if (!response.ok) throw new Error(data.error);
+      // 2. LÓGICA MOVIDA PARA O APISERVICE
+      const bookData = { titulo, autor, isbn };
+      await apiService.createBook(bookData);
 
       // Sucesso
       setMessage({ type: 'success', text: `Livro "${titulo}" cadastrado com sucesso!` });
@@ -71,7 +65,6 @@ export default function CadastrarLivro() {
 
   return (
     <Box sx={{ display: 'flex' }}>
-      {/* 1. AppBar (Barra superior azul) */}
       <AppBar position="fixed">
         <Toolbar>
           <IconButton
@@ -91,7 +84,6 @@ export default function CadastrarLivro() {
         </Toolbar>
       </AppBar>
 
-      {/* 2. Conteúdo principal com fundo cinza */}
       <Box
         component="main"
         sx={{
@@ -103,9 +95,7 @@ export default function CadastrarLivro() {
           boxSizing: 'border-box'
         }}
       >
-        {/* Container para centralizar e limitar a largura do formulário */}
         <Container maxWidth="md">
-          {/* 3. Card (Paper) branco para o formulário */}
           <Paper
             elevation={3}
             sx={{
@@ -126,7 +116,6 @@ export default function CadastrarLivro() {
               Preencha os dados para adicionar o item ao acervo.
             </Typography>
 
-            {/* 4. Formulário */}
             <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%', mt: 1 }}>
               
               {message && (

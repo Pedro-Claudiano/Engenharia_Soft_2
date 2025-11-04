@@ -5,7 +5,6 @@ import ReactDOM from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { CssBaseline } from '@mui/material';
 
-// Importando o layout de seu novo arquivo
 import CenteredLayout from './components/CenteredLayout.jsx';
 
 // Importando todas as suas páginas
@@ -16,6 +15,7 @@ import Emprestimos from './pages/Emprestimos.jsx';
 import Register from './pages/Register.jsx';
 import ForgotPassword from './pages/ForgotPassword.jsx';
 import NewBook from './pages/newBook.jsx';
+import Acervo from './pages/Acervo.jsx';
 
 // --- CONFIGURAÇÃO DAS ROTAS ---
 const router = createBrowserRouter([
@@ -46,6 +46,10 @@ const router = createBrowserRouter([
   {
     path: "/cadastrar-livro",
     element: <NewBook />, // Não usa o CenteredLayout pois tem seu próprio AppBar
+  },
+  {
+    path: "/acervo",
+    element: <Acervo />,
   },
 ]);
 

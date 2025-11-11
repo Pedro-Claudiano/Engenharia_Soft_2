@@ -13,3 +13,6 @@ yarn-error.log*
 
 # Arquivos de build (do frontend)
 frontend/dist
+
+# Ignora o arquivo de senhas do backend
+backend/.env

@@ -76,7 +76,7 @@ export default function CadastrarLivro() {
             <ArrowBackIcon />
           </IconButton>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1, ml: 2 }}>
-            Painel Administrativo
+            Painel do Bibliotecário
           </Typography>
           <IconButton color="inherit" onClick={handleLogout} aria-label="sair">
             <LogoutIcon />

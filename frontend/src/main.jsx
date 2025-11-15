@@ -16,6 +16,7 @@ import Register from './pages/Register.jsx';
 import ForgotPassword from './pages/ForgotPassword.jsx';
 import NewBook from './pages/newBook.jsx';
 import Acervo from './pages/Acervo.jsx';
+import EditarLivro from './pages/editBook.jsx';
 
 // --- CONFIGURAÇÃO DAS ROTAS ---
 const router = createBrowserRouter([
@@ -50,6 +51,10 @@ const router = createBrowserRouter([
   {
     path: "/acervo",
     element: <Acervo />,
+  },
+  {
+    path: "/editar-livro/:id", // 2. ROTA ADICIONADA AQUI
+    element: <EditarLivro />,
   },
 ]);
 

@@ -18,12 +18,14 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Chip
+  Chip,
+  Tooltip // 1. IMPORTADO
 } from '@mui/material';
 import LogoutIcon from '@mui/icons-material/Logout';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SearchIcon from '@mui/icons-material/Search';
-import { useNavigate } from 'react-router-dom';
+import EditIcon from '@mui/icons-material/Edit'; // 2. IMPORTADO
+import { useNavigate, Link as RouterLink } from 'react-router-dom'; // 3. IMPORTADO RouterLink
 import { apiService } from '../services/apiService';
 
 export default function Acervo() {
@@ -31,7 +33,7 @@ export default function Acervo() {
 
   // Estados da busca
   const [searchTerm, setSearchTerm] = useState('');
-  const [results, setResults] = useState([]); // Para guardar os livros encontrados
+  const [results, setResults] = useState([]);
   
   // Estados de controle
   const [message, setMessage] = useState(null);
@@ -114,7 +116,7 @@ export default function Acervo() {
               flexDirection: 'column',
               alignItems: 'center',
               borderRadius: 2,
-              mb: 3 // Margem abaixo do card de busca
+              mb: 3
             }}
           >
             <Avatar sx={{ m: 1, bgcolor: 'primary.main' }}>
@@ -172,6 +174,8 @@ export default function Acervo() {
                       <TableCell sx={{ fontWeight: 600 }}>Título</TableCell>
                       <TableCell sx={{ fontWeight: 600 }}>Autor</TableCell>
                       <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                      {/* 4. NOVA COLUNA */}
+                      <TableCell sx={{ fontWeight: 600 }} align="center">Ações</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -186,6 +190,18 @@ export default function Acervo() {
                             size="small"
                           />
                         </TableCell>
+                        {/* 5. NOVO BOTÃO DE EDITAR */}
+                        <TableCell align="center">
+                          <Tooltip title="Editar Livro">
+                            <IconButton
+                              component={RouterLink}
+                              to={`/editar-livro/${livro.id}`}
+                              color="primary"
+                            >
+                              <EditIcon />
+                            </IconButton>
+                          </Tooltip>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -198,4 +214,3 @@ export default function Acervo() {
     </Box>
   );
 }
-

@@ -35,3 +35,32 @@ CREATE TABLE `livros` (
   `data_aquisicao` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 );
+
+/* 4. Criação da tabela 'emprestimos' */
+CREATE TABLE `emprestimos` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  
+  /* IDs que ligam às outras tabelas */
+  `id_usuario` INT NOT NULL, 
+  `id_livro` INT NOT NULL,
+  
+  /* Datas */
+  `data_emprestimo` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `data_devolucao_prevista` DATE NOT NULL,
+  `data_devolucao_real` DATE NULL, 
+  
+  PRIMARY KEY (`id`),
+  
+  /* Conexões (Foreign Keys) */
+  CONSTRAINT `fk_emprestimo_usuario`
+    FOREIGN KEY (`id_usuario`)
+    REFERENCES `usuarios` (`id`)
+    ON DELETE RESTRICT
+    ON UPDATE CASCADE,
+
+  CONSTRAINT `fk_emprestimo_livro`
+    FOREIGN KEY (`id_livro`)
+    REFERENCES `livros` (`id`)
+    ON DELETE RESTRICT
+    ON UPDATE CASCADE
+);

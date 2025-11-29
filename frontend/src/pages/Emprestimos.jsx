@@ -22,22 +22,22 @@ import {
 import KeyboardReturnIcon from '@mui/icons-material/KeyboardReturn';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import { useNavigate } from 'react-router-dom';
-import { apiService } from '../services/apiService'; // <--- 1. IMPORTANTE
+import { apiService } from '../services/apiService'; // IMPORTANTE
 
 export default function Emprestimos() {
   const navigate = useNavigate();
   
-  // State para o formulário (agora esperamos IDs)
+  // Dados do formulário
   const [formData, setFormData] = useState({ bookId: '', userId: '' });
-  
-  // State para a lista de empréstimos
+
+  // Lista de empréstimos
   const [emprestimos, setEmprestimos] = useState([]);
 
-  // States para feedback ao usuário
+  // Feedback e loading
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
 
-  // <--- 2. CARREGAR DADOS AO ABRIR A TELA
+  // Carregar empréstimos ao entrar
   useEffect(() => {
     fetchEmprestimos();
   }, []);
@@ -54,14 +54,13 @@ export default function Emprestimos() {
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-    setFormData(prevState => ({ ...prevState, [name]: value }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // <--- 3. ENVIAR DADOS PARA O BACKEND
+  // Criar empréstimo
   const handleSubmit = async (event) => {
     event.preventDefault();
-    
-    // Validação simples
+
     if (!formData.bookId || !formData.userId) {
       setMessage({ type: 'error', text: 'Preencha os IDs do Livro e do Leitor.' });
       return;
@@ -71,29 +70,37 @@ export default function Emprestimos() {
     setMessage('');
 
     try {
-      // Converte para número, pois o backend espera Int
       await apiService.createLoan(Number(formData.userId), Number(formData.bookId));
 
       setMessage({ type: 'success', text: 'Empréstimo registrado com sucesso!' });
-      setFormData({ bookId: '', userId: '' }); // Limpa o formulário
-      
-      // Recarrega a lista para mostrar o novo empréstimo
-      fetchEmprestimos(); 
+      setFormData({ bookId: '', userId: '' });
+
+      fetchEmprestimos();
 
     } catch (error) {
-      setMessage({ type: 'error', text: error.message || 'Erro ao registrar empréstimo.' });
+      setMessage({ type: 'error', text: 'Erro ao registrar empréstimo.' });
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Função para "devolver" (Por enquanto apenas visual, backend ainda não tem essa rota)
-  const handleDevolver = (id) => {
-    alert("Funcionalidade de devolver no backend ainda será implementada!");
-    setEmprestimos(prev => prev.filter(e => e.id !== id));
+  // DEVOLVER — AGORA USANDO O BACKEND
+  const handleDevolver = async (id) => {
+    if (!window.confirm("Confirmar devolução do livro?")) return;
+
+    try {
+      await apiService.returnLoan(id);
+
+      setMessage({ type: 'success', text: 'Livro devolvido com sucesso!' });
+
+      fetchEmprestimos();
+
+    } catch (error) {
+      console.error(error);
+      setMessage({ type: 'error', text: 'Erro ao devolver livro.' });
+    }
   };
 
-  // Função auxiliar para formatar data
   const formatarData = (dataISO) => {
     if (!dataISO) return '-';
     return new Date(dataISO).toLocaleDateString('pt-BR');
@@ -101,75 +108,70 @@ export default function Emprestimos() {
 
   return (
     <Box sx={{ flexGrow: 1, bgcolor: '#f0f2f5', minHeight: '100vh' }}>
+      {/* Topo */}
       <AppBar position="static">
         <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+          <Typography variant="h6" sx={{ flexGrow: 1 }}>
             Gestão de Empréstimos
           </Typography>
-          <Button color="inherit" onClick={() => navigate('/dashboard')}>Voltar ao Painel</Button>
+          <Button color="inherit" onClick={() => navigate('/dashboard')}>
+            Voltar ao Painel
+          </Button>
         </Toolbar>
       </AppBar>
 
       <Box sx={{ p: 3 }}>
-        {/* Seção do Formulário */}
+        
+        {/* FORMULÁRIO */}
         <Paper component="form" onSubmit={handleSubmit} sx={{ p: 3, mb: 4 }}>
           <Stack spacing={2}>
-            <Typography variant="h5" component="h2" gutterBottom>
-              Registrar Novo Empréstimo
-            </Typography>
             
+            <Typography variant="h5">Registrar Novo Empréstimo</Typography>
+
             <Alert severity="info">
-              Por enquanto, insira o <strong>ID (Número)</strong> do Livro e do Usuário.
-              Você pode vê-los no banco de dados.
+              Digite o <strong>ID do Livro</strong> e o <strong>ID do Usuário</strong>.
             </Alert>
 
             <TextField
-              required
-              fullWidth
               type="number"
-              id="bookId"
               label="ID do Livro"
               name="bookId"
+              required
               value={formData.bookId}
               onChange={handleChange}
-              disabled={isLoading}
-              placeholder="Ex: 1"
             />
+
             <TextField
-              required
-              fullWidth
               type="number"
-              id="userId"
               label="ID do Usuário (Leitor)"
               name="userId"
+              required
               value={formData.userId}
               onChange={handleChange}
-              disabled={isLoading}
-              placeholder="Ex: 1"
             />
+
             <Button
               type="submit"
               variant="contained"
+              startIcon={!isLoading && <AddCircleOutlineIcon />}
               disabled={isLoading}
-              startIcon={isLoading ? null : <AddCircleOutlineIcon />}
-              sx={{ py: 1.5 }}
             >
-              {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Registrar Empréstimo'}
+              {isLoading ? <CircularProgress size={24} /> : "Registrar Empréstimo"}
             </Button>
 
-            {message && (
-              <Alert severity={message.type} sx={{ width: '100%', mt: 2 }}>
-                {message.text}
-              </Alert>
+            {message?.text && (
+              <Alert severity={message.type}>{message.text}</Alert>
             )}
+
           </Stack>
         </Paper>
 
-        {/* Seção da Tabela de Empréstimos Ativos */}
+        {/* LISTA */}
         <Paper sx={{ p: 3 }}>
-          <Typography variant="h5" component="h2" gutterBottom>
+          <Typography variant="h5" gutterBottom>
             Histórico de Empréstimos
           </Typography>
+
           <TableContainer>
             <Table>
               <TableHead>
@@ -179,41 +181,44 @@ export default function Emprestimos() {
                   <TableCell><strong>Leitor</strong></TableCell>
                   <TableCell><strong>Data Empréstimo</strong></TableCell>
                   <TableCell><strong>Devolução Prevista</strong></TableCell>
-                  {/* <TableCell align="right">Ações</TableCell> */}
+                  <TableCell><strong>Ações</strong></TableCell>
                 </TableRow>
               </TableHead>
+
               <TableBody>
+
                 {emprestimos.length === 0 ? (
-                   <TableRow>
-                     <TableCell colSpan={5} align="center">Nenhum empréstimo encontrado.</TableCell>
-                   </TableRow>
+                  <TableRow>
+                    <TableCell colSpan={6} align="center">Nenhum empréstimo encontrado.</TableCell>
+                  </TableRow>
                 ) : (
-                  emprestimos.map((emp) => (
+                  emprestimos.map(emp => (
                     <TableRow key={emp.id}>
                       <TableCell>{emp.id}</TableCell>
-                      {/* Usamos as chaves exatas que vêm do Backend/SQL */}
                       <TableCell>{emp.titulo_livro}</TableCell>
                       <TableCell>{emp.nome_usuario}</TableCell>
                       <TableCell>{formatarData(emp.data_emprestimo)}</TableCell>
                       <TableCell>{formatarData(emp.data_devolucao_prevista)}</TableCell>
-                      
-                      { <TableCell align="right">
+
+                      <TableCell>
                         <Button
                           variant="outlined"
-                          size="small"
                           startIcon={<KeyboardReturnIcon />}
                           onClick={() => handleDevolver(emp.id)}
+                          color="warning"
                         >
                           Devolver
                         </Button>
-                      </TableCell> 
-                      }
+                      </TableCell>
+
                     </TableRow>
                   ))
                 )}
+
               </TableBody>
             </Table>
           </TableContainer>
+
         </Paper>
       </Box>
     </Box>

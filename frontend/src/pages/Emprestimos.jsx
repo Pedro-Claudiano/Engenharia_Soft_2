@@ -19,25 +19,21 @@ import {
   TableHead,
   TableRow,
 } from '@mui/material';
+
 import KeyboardReturnIcon from '@mui/icons-material/KeyboardReturn';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+
 import { useNavigate } from 'react-router-dom';
-import { apiService } from '../services/apiService'; // IMPORTANTE
+import { apiService } from '../services/apiService';
 
 export default function Emprestimos() {
   const navigate = useNavigate();
-  
-  // Dados do formulário
+
   const [formData, setFormData] = useState({ bookId: '', userId: '' });
-
-  // Lista de empréstimos
   const [emprestimos, setEmprestimos] = useState([]);
-
-  // Feedback e loading
   const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState(null);
 
-  // Carregar empréstimos ao entrar
   useEffect(() => {
     fetchEmprestimos();
   }, []);
@@ -47,34 +43,29 @@ export default function Emprestimos() {
       const data = await apiService.getLoans();
       setEmprestimos(data);
     } catch (error) {
-      console.error("Erro ao buscar empréstimos:", error);
-      setMessage({ type: 'error', text: 'Não foi possível carregar a lista de empréstimos.' });
+      setMessage({ type: 'error', text: 'Erro ao carregar empréstimos.' });
     }
   };
 
-  const handleChange = (event) => {
-    const { name, value } = event.target;
+  const handleChange = (e) => {
+    const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Criar empréstimo
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
     if (!formData.bookId || !formData.userId) {
-      setMessage({ type: 'error', text: 'Preencha os IDs do Livro e do Leitor.' });
+      setMessage({ type: 'error', text: 'Preencha todos os campos.' });
       return;
     }
 
-    setIsLoading(true);
-    setMessage('');
-
     try {
+      setIsLoading(true);
       await apiService.createLoan(Number(formData.userId), Number(formData.bookId));
 
-      setMessage({ type: 'success', text: 'Empréstimo registrado com sucesso!' });
+      setMessage({ type: 'success', text: 'Empréstimo registrado!' });
       setFormData({ bookId: '', userId: '' });
-
       fetchEmprestimos();
 
     } catch (error) {
@@ -84,70 +75,67 @@ export default function Emprestimos() {
     }
   };
 
-  // DEVOLVER — AGORA USANDO O BACKEND
   const handleDevolver = async (id) => {
-    if (!window.confirm("Confirmar devolução do livro?")) return;
+    if (!window.confirm('Confirmar devolução?')) return;
 
     try {
-      await apiService.returnLoan(id);
+      await apiService.devolverLoan(id);
 
       setMessage({ type: 'success', text: 'Livro devolvido com sucesso!' });
 
-      fetchEmprestimos();
+      fetchEmprestimos(); // Atualiza lista — emprestimo some da tabela
 
     } catch (error) {
-      console.error(error);
       setMessage({ type: 'error', text: 'Erro ao devolver livro.' });
     }
   };
 
-  const formatarData = (dataISO) => {
-    if (!dataISO) return '-';
-    return new Date(dataISO).toLocaleDateString('pt-BR');
+  const formatarData = (d) => {
+    if (!d) return '-';
+    return new Date(d).toLocaleDateString('pt-BR');
   };
 
   return (
-    <Box sx={{ flexGrow: 1, bgcolor: '#f0f2f5', minHeight: '100vh' }}>
-      {/* Topo */}
+    <Box sx={{ flexGrow: 1, backgroundColor: '#f0f2f5', minHeight: '100vh' }}>
+
       <AppBar position="static">
         <Toolbar>
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
             Gestão de Empréstimos
           </Typography>
           <Button color="inherit" onClick={() => navigate('/dashboard')}>
-            Voltar ao Painel
+            Voltar
           </Button>
         </Toolbar>
       </AppBar>
 
       <Box sx={{ p: 3 }}>
-        
-        {/* FORMULÁRIO */}
-        <Paper component="form" onSubmit={handleSubmit} sx={{ p: 3, mb: 4 }}>
+
+        <Paper sx={{ p: 3, mb: 4 }} component="form" onSubmit={handleSubmit}>
           <Stack spacing={2}>
-            
-            <Typography variant="h5">Registrar Novo Empréstimo</Typography>
+
+            <Typography variant="h5">Registrar Empréstimo</Typography>
 
             <Alert severity="info">
-              Digite o <strong>ID do Livro</strong> e o <strong>ID do Usuário</strong>.
+              Preencha o ID do Livro e o ID do Usuário.
             </Alert>
 
             <TextField
+              name="bookId"
               type="number"
               label="ID do Livro"
-              name="bookId"
-              required
               value={formData.bookId}
               onChange={handleChange}
+              required
             />
 
             <TextField
-              type="number"
-              label="ID do Usuário (Leitor)"
               name="userId"
-              required
+              type="number"
+              label="ID do Usuário"
               value={formData.userId}
               onChange={handleChange}
+              required
             />
 
             <Button
@@ -156,20 +144,16 @@ export default function Emprestimos() {
               startIcon={!isLoading && <AddCircleOutlineIcon />}
               disabled={isLoading}
             >
-              {isLoading ? <CircularProgress size={24} /> : "Registrar Empréstimo"}
+              {isLoading ? <CircularProgress size={24} /> : 'Registrar'}
             </Button>
 
-            {message?.text && (
-              <Alert severity={message.type}>{message.text}</Alert>
-            )}
-
+            {message && <Alert severity={message.type}>{message.text}</Alert>}
           </Stack>
         </Paper>
 
-        {/* LISTA */}
         <Paper sx={{ p: 3 }}>
           <Typography variant="h5" gutterBottom>
-            Histórico de Empréstimos
+            Empréstimos Ativos
           </Typography>
 
           <TableContainer>
@@ -187,12 +171,9 @@ export default function Emprestimos() {
 
               <TableBody>
 
-                {emprestimos.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} align="center">Nenhum empréstimo encontrado.</TableCell>
-                  </TableRow>
-                ) : (
-                  emprestimos.map(emp => (
+                {emprestimos
+                  .filter(emp => !emp.data_devolvido)  // ⬅ IMPORTANTE: só mostra ativos
+                  .map(emp => (
                     <TableRow key={emp.id}>
                       <TableCell>{emp.id}</TableCell>
                       <TableCell>{emp.titulo_livro}</TableCell>
@@ -203,23 +184,31 @@ export default function Emprestimos() {
                       <TableCell>
                         <Button
                           variant="outlined"
+                          color="warning"
                           startIcon={<KeyboardReturnIcon />}
                           onClick={() => handleDevolver(emp.id)}
-                          color="warning"
                         >
                           Devolver
                         </Button>
                       </TableCell>
-
                     </TableRow>
-                  ))
+                  ))}
+
+                {emprestimos.filter(emp => !emp.data_devolvido).length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6} align="center">
+                      Nenhum empréstimo ativo no momento.
+                    </TableCell>
+                  </TableRow>
                 )}
 
               </TableBody>
+
             </Table>
           </TableContainer>
 
         </Paper>
+
       </Box>
     </Box>
   );

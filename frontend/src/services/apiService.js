@@ -1,4 +1,4 @@
-// --- frontend/src/services/apiService.js (VERSÃO FINAL COMPLETA) ---
+// --- frontend/src/services/apiService.js ---
 
 const BASE_URL = 'http://localhost:3001/api';
 
@@ -100,8 +100,8 @@ async function getLoans() {
   return data;
 }
 
-// DEVOLVER LIVRO — AGORA FUNCIONANDO!
-async function returnLoan(id) {
+// DEVOLVER LIVRO — FUNÇÃO CORRETA
+async function devolverLoan(id) {
   const response = await fetch(`${BASE_URL}/loans/${id}/devolver`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -113,19 +113,17 @@ async function returnLoan(id) {
 }
 
 /* ============================
-   MOCKS TEMPORÁRIOS (AINDA USADOS PELO BUSCADOR)
+   MOCKS TEMPORÁRIOS
 ============================ */
 
 const MOCK_DB = [
-  { id: 1, titulo: 'O Senhor dos Anéis: A Sociedade do Anel', autor: 'J.R.R. Tolkien', isbn: '978-0618640157', status: 'Disponível' },
+  { id: 1, titulo: 'O Senhor dos Anéis', autor: 'Tolkien', isbn: '978-0618640157', status: 'Disponível' },
   { id: 2, titulo: '1984', autor: 'George Orwell', isbn: '978-0451524935', status: 'Emprestado' },
-  { id: 3, titulo: 'O Hobbit', autor: 'J.R.R. Tolkien', isbn: '978-0618260300', status: 'Disponível' },
-  { id: 4, titulo: 'Fahrenheit 451', autor: 'Ray Bradbury', isbn: '978-1451673319', status: 'Disponível' },
 ];
 
 async function forgotPassword(email) {
-  console.log(`Simulando envio de e-mail para: ${email}`);
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  console.log(`Simulando envio de email para ${email}`);
+  await new Promise(resolve => setTimeout(resolve, 800));
   return { message: "Email enviado com sucesso." };
 }
 
@@ -139,14 +137,14 @@ async function searchBooks(query) {
 }
 
 async function getBookById(id) {
-  await new Promise(resolve => setTimeout(resolve, 500));
+  await new Promise(resolve => setTimeout(resolve, 400));
   const book = MOCK_DB.find(l => l.id == id);
   if (book) return book;
   throw new Error("Livro não encontrado.");
 }
 
 /* ============================
-   EXPORTAÇÃO FINAL
+   EXPORTAÇÃO
 ============================ */
 
 export const apiService = {
@@ -158,7 +156,7 @@ export const apiService = {
   deleteBook,
   createLoan,
   getLoans,
-  returnLoan,  // ← AGORA EXISTE AQUI
+  devolverLoan,   // ← FUNÇÃO QUE O FRONT VAI USAR
   searchBooks,
   getBookById,
 };

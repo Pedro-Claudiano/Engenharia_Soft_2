@@ -17,6 +17,7 @@ import ForgotPassword from './pages/ForgotPassword.jsx';
 import NewBook from './pages/newBook.jsx';
 import Acervo from './pages/Acervo.jsx';
 import EditarLivro from './pages/editBook.jsx';
+import Clientes from './pages/Clientes.jsx'; // <--- 1. IMPORTADO AQUI
 
 // --- CONFIGURAÇÃO DAS ROTAS ---
 const router = createBrowserRouter([
@@ -46,15 +47,19 @@ const router = createBrowserRouter([
   },
   {
     path: "/cadastrar-livro",
-    element: <NewBook />, // Não usa o CenteredLayout pois tem seu próprio AppBar
+    element: <NewBook />, 
   },
   {
     path: "/acervo",
     element: <Acervo />,
   },
   {
-    path: "/editar-livro/:id", // 2. ROTA ADICIONADA AQUI
+    path: "/editar-livro/:id",
     element: <EditarLivro />,
+  },
+  {
+    path: "/clientes", // <--- 2. ROTA ADICIONADA AQUI
+    element: <Clientes />,
   },
 ]);
 

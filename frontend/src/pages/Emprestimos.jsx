@@ -1,5 +1,3 @@
-// src/pages/Emprestimos.jsx
-
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -18,6 +16,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Container
 } from '@mui/material';
 
 import KeyboardReturnIcon from '@mui/icons-material/KeyboardReturn';
@@ -29,7 +28,8 @@ import { apiService } from '../services/apiService';
 export default function Emprestimos() {
   const navigate = useNavigate();
 
-  const [formData, setFormData] = useState({ bookId: '', userId: '' });
+  // 1. Mudamos de userId para clientId
+  const [formData, setFormData] = useState({ bookId: '', clientId: '' });
   const [emprestimos, setEmprestimos] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState(null);
@@ -43,8 +43,7 @@ export default function Emprestimos() {
       const data = await apiService.getLoans();
       setEmprestimos(data);
     } catch (error) {
-      // O '||' serve como um "ou", caso o erro não tenha mensagem, usa a fixa.
-      setMessage({ type: 'error', text: error.message || 'Erro ao devolver livro.' });
+      setMessage({ type: 'error', text: error.message || 'Erro ao buscar dados.' });
     }
   };
 
@@ -56,39 +55,35 @@ export default function Emprestimos() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.bookId || !formData.userId) {
+    if (!formData.bookId || !formData.clientId) {
       setMessage({ type: 'error', text: 'Preencha todos os campos.' });
       return;
     }
 
     try {
       setIsLoading(true);
-      await apiService.createLoan(Number(formData.userId), Number(formData.bookId));
+      // 2. Enviamos clientId para a API
+      await apiService.createLoan(Number(formData.clientId), Number(formData.bookId));
 
-      setMessage({ type: 'success', text: 'Empréstimo registrado!' });
-      setFormData({ bookId: '', userId: '' });
+      setMessage({ type: 'success', text: 'Empréstimo registrado com sucesso!' });
+      setFormData({ bookId: '', clientId: '' });
       fetchEmprestimos();
 
     } catch (error) {
-      // O '||' serve como um "ou", caso o erro não tenha mensagem, usa a fixa.
-      setMessage({ type: 'error', text: error.message || 'Erro ao devolver livro.' });
+      setMessage({ type: 'error', text: error.message || 'Erro ao registrar empréstimo.' });
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleDevolver = async (id) => {
-    if (!window.confirm('Confirmar devolução?')) return;
+    if (!window.confirm('Confirmar devolução do livro?')) return;
 
     try {
       await apiService.devolverLoan(id);
-
       setMessage({ type: 'success', text: 'Livro devolvido com sucesso!' });
-
-      fetchEmprestimos(); // Atualiza lista — emprestimo some da tabela
-
+      fetchEmprestimos(); 
     } catch (error) {
-      // O '||' serve como um "ou", caso o erro não tenha mensagem, usa a fixa.
       setMessage({ type: 'error', text: error.message || 'Erro ao devolver livro.' });
     }
   };
@@ -112,42 +107,47 @@ export default function Emprestimos() {
         </Toolbar>
       </AppBar>
 
-      <Box sx={{ p: 3 }}>
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
 
         <Paper sx={{ p: 3, mb: 4 }} component="form" onSubmit={handleSubmit}>
           <Stack spacing={2}>
 
-            <Typography variant="h5">Registrar Empréstimo</Typography>
+            <Typography variant="h5">Registrar Novo Empréstimo</Typography>
 
             <Alert severity="info">
-              Preencha o ID do Livro e o ID do Usuário.
+              Informe o ID do Livro e o ID do Cliente (Leitor).
             </Alert>
+            
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <TextField
+                name="bookId"
+                type="number"
+                label="ID do Livro"
+                fullWidth
+                value={formData.bookId}
+                onChange={handleChange}
+                required
+              />
 
-            <TextField
-              name="bookId"
-              type="number"
-              label="ID do Livro"
-              value={formData.bookId}
-              onChange={handleChange}
-              required
-            />
-
-            <TextField
-              name="userId"
-              type="number"
-              label="ID do Usuário"
-              value={formData.userId}
-              onChange={handleChange}
-              required
-            />
+              <TextField
+                name="clientId" // <--- Campo atualizado
+                type="number"
+                label="ID do Cliente" // <--- Label atualizado
+                fullWidth
+                value={formData.clientId} // <--- Valor atualizado
+                onChange={handleChange}
+                required
+              />
+            </Stack>
 
             <Button
               type="submit"
               variant="contained"
+              size="large"
               startIcon={!isLoading && <AddCircleOutlineIcon />}
               disabled={isLoading}
             >
-              {isLoading ? <CircularProgress size={24} /> : 'Registrar'}
+              {isLoading ? <CircularProgress size={24} /> : 'Registrar Empréstimo'}
             </Button>
 
             {message && <Alert severity={message.type}>{message.text}</Alert>}
@@ -165,29 +165,35 @@ export default function Emprestimos() {
                 <TableRow>
                   <TableCell><strong>ID</strong></TableCell>
                   <TableCell><strong>Livro</strong></TableCell>
-                  <TableCell><strong>Leitor</strong></TableCell>
+                  <TableCell><strong>Cliente</strong></TableCell> {/* <--- Atualizado */}
                   <TableCell><strong>Data Empréstimo</strong></TableCell>
                   <TableCell><strong>Devolução Prevista</strong></TableCell>
-                  <TableCell><strong>Ações</strong></TableCell>
+                  <TableCell align="center"><strong>Ações</strong></TableCell>
                 </TableRow>
               </TableHead>
 
               <TableBody>
-
                 {emprestimos
-                  .filter(emp => !emp.data_devolvido)  // ⬅ IMPORTANTE: só mostra ativos
+                  .filter(emp => !emp.data_devolvido) 
                   .map(emp => (
-                    <TableRow key={emp.id}>
+                    <TableRow key={emp.id} hover>
                       <TableCell>{emp.id}</TableCell>
                       <TableCell>{emp.titulo_livro}</TableCell>
-                      <TableCell>{emp.nome_usuario}</TableCell>
+                      {/* 3. Exibimos nome_cliente em vez de nome_usuario */}
+                      <TableCell>
+                        {emp.nome_cliente} 
+                        <Typography variant="caption" display="block" color="text.secondary">
+                          CPF: {emp.cpf_cliente}
+                        </Typography>
+                      </TableCell>
                       <TableCell>{formatarData(emp.data_emprestimo)}</TableCell>
                       <TableCell>{formatarData(emp.data_devolucao_prevista)}</TableCell>
 
-                      <TableCell>
+                      <TableCell align="center">
                         <Button
                           variant="outlined"
                           color="warning"
+                          size="small"
                           startIcon={<KeyboardReturnIcon />}
                           onClick={() => handleDevolver(emp.id)}
                         >
@@ -204,15 +210,12 @@ export default function Emprestimos() {
                     </TableCell>
                   </TableRow>
                 )}
-
               </TableBody>
-
             </Table>
           </TableContainer>
-
         </Paper>
 
-      </Box>
+      </Container>
     </Box>
   );
 }

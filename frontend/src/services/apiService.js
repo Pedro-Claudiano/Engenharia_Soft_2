@@ -1,16 +1,10 @@
-// --- frontend/src/services/apiService.js ---
-
 const BASE_URL = 'http://localhost:3001/api';
 
-/* ============================
-   USUÁRIO
-============================ */
-
-async function register(nome, email, password) { // <--- Adicione 'nome' aqui
+async function register(nome, email, password) {
   const response = await fetch(`${BASE_URL}/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ nome, email, password }), // <--- E aqui
+    body: JSON.stringify({ nome, email, password }),
   });
 
   const data = await response.json();
@@ -30,17 +24,12 @@ async function login(email, password) {
   return data;
 }
 
-/* ============================
-   LIVROS
-============================ */
-
 async function createBook(bookData) {
   const { titulo, autor, isbn, quantidade } = bookData;
 
   const response = await fetch(`${BASE_URL}/books`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    // Envia a quantidade junto no JSON
     body: JSON.stringify({ titulo, autor, isbn, quantidade }),
   });
 
@@ -75,24 +64,18 @@ async function deleteBook(id) {
   return data;
 }
 
-/* ============================
-   EMPRÉSTIMOS
-============================ */
-
-// Criar empréstimo
-async function createLoan(userId, bookId) {
+// Atualize esta função
+async function createLoan(clientId, bookId) { // <--- Recebe clientId
   const response = await fetch(`${BASE_URL}/loans`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId, bookId }),
+    body: JSON.stringify({ clientId, bookId }), // <--- Envia clientId
   });
 
   const data = await response.json();
   if (!response.ok) throw new Error(data.message || 'Erro ao realizar empréstimo.');
   return data;
 }
-
-// Buscar empréstimos
 async function getLoans() {
   const response = await fetch(`${BASE_URL}/loans`);
   const data = await response.json();
@@ -101,7 +84,6 @@ async function getLoans() {
   return data;
 }
 
-// DEVOLVER LIVRO — FUNÇÃO CORRETA
 async function devolverLoan(id) {
   const response = await fetch(`${BASE_URL}/loans/${id}/devolver`, {
     method: 'PUT',
@@ -113,40 +95,73 @@ async function devolverLoan(id) {
   return data;
 }
 
-/* ============================
-   MOCKS TEMPORÁRIOS
-============================ */
+async function searchBooks(query) {
+  const url = query 
+    ? `${BASE_URL}/books?q=${encodeURIComponent(query)}`
+    : `${BASE_URL}/books`;
 
-const MOCK_DB = [
-  { id: 1, titulo: 'O Senhor dos Anéis', autor: 'Tolkien', isbn: '978-0618640157', status: 'Disponível' },
-  { id: 2, titulo: '1984', autor: 'George Orwell', isbn: '978-0451524935', status: 'Emprestado' },
-];
+  const response = await fetch(url);
+  const data = await response.json();
+
+  if (!response.ok) throw new Error(data.message || 'Erro ao buscar livros.');
+  return data;
+}
+
+async function getBookById(id) {
+  const response = await fetch(`${BASE_URL}/books/${id}`);
+  const data = await response.json();
+
+  if (!response.ok) throw new Error(data.message || 'Livro não encontrado.');
+  return data;
+}
 
 async function forgotPassword(email) {
-  console.log(`Simulando envio de email para ${email}`);
   await new Promise(resolve => setTimeout(resolve, 800));
   return { message: "Email enviado com sucesso." };
 }
 
-async function searchBooks(query) {
-  await new Promise(resolve => setTimeout(resolve, 800));
-  if (!query) return [];
-  return MOCK_DB.filter(l =>
-    l.titulo.toLowerCase().includes(query.toLowerCase()) ||
-    l.autor.toLowerCase().includes(query.toLowerCase())
-  );
-}
-
-async function getBookById(id) {
-  await new Promise(resolve => setTimeout(resolve, 400));
-  const book = MOCK_DB.find(l => l.id == id);
-  if (book) return book;
-  throw new Error("Livro não encontrado.");
-}
 
 /* ============================
-   EXPORTAÇÃO
+   CLIENTES (LEITORES)
 ============================ */
+
+async function getClients() {
+  const response = await fetch(`${BASE_URL}/clients`);
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Erro ao buscar clientes.');
+  return data;
+}
+
+async function createClient(clientData) {
+  const response = await fetch(`${BASE_URL}/clients`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(clientData),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Erro ao cadastrar cliente.');
+  return data;
+}
+
+async function updateClient(id, clientData) {
+  const response = await fetch(`${BASE_URL}/clients/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(clientData),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Erro ao atualizar cliente.');
+  return data;
+}
+
+async function deleteClient(id) {
+  const response = await fetch(`${BASE_URL}/clients/${id}`, {
+    method: 'DELETE',
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Erro ao deletar cliente.');
+  return data;
+}
 
 export const apiService = {
   login,
@@ -157,7 +172,11 @@ export const apiService = {
   deleteBook,
   createLoan,
   getLoans,
-  devolverLoan,   // ← FUNÇÃO QUE O FRONT VAI USAR
+  devolverLoan,
   searchBooks,
   getBookById,
+  getClients,
+  createClient,
+  updateClient,
+  deleteClient,
 };

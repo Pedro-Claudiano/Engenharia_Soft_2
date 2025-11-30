@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; // <--- 1. IMPORTADO USEEFFECT
 import {
   Box,
   AppBar,
@@ -19,19 +19,19 @@ import {
   TableHead,
   TableRow,
   Chip,
-  Tooltip, // 1. IMPORTADO
-  Button, // 2. IMPORTADO
-  Dialog, // 3. IMPORTADO
-  DialogActions, // 4. IMPORTADO
-  DialogContent, // 5. IMPORTADO
-  DialogContentText, // 6. IMPORTADO
-  DialogTitle // 7. IMPORTADO
+  Tooltip,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle
 } from '@mui/material';
 import LogoutIcon from '@mui/icons-material/Logout';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SearchIcon from '@mui/icons-material/Search';
 import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete'; // 8. IMPORTADO
+import DeleteIcon from '@mui/icons-material/Delete';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { apiService } from '../services/apiService';
 
@@ -44,60 +44,64 @@ export default function Acervo() {
   const [message, setMessage] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   
-  // 9. ESTADOS PARA O DIALOG DE CONFIRMAÇÃO
   const [openConfirm, setOpenConfirm] = useState(false);
-  const [bookToDelete, setBookToDelete] = useState(null); // Guarda o livro a ser deletado
+  const [bookToDelete, setBookToDelete] = useState(null);
+
+  // --- 2. FUNÇÃO UNIFICADA DE BUSCA ---
+  // Se passar termo, busca filtrado. Se não passar, busca tudo.
+  const fetchBooks = async (term = '') => {
+    setIsLoading(true);
+    setMessage(null);
+    try {
+      const data = await apiService.searchBooks(term);
+      setResults(data);
+      
+      if (data.length === 0) {
+        setMessage({ type: 'info', text: 'Nenhum livro encontrado.' });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: error.message || 'Erro ao buscar livros.' });
+      setResults([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // --- 3. CARREGA TUDO AO INICIAR A TELA ---
+  useEffect(() => {
+    fetchBooks(); // Chama sem parâmetros para trazer todos
+  }, []);
 
   const handleLogout = () => {
     console.log("Usuário deslogado.");
     navigate('/');
   };
 
-  const handleSearch = async (event) => {
+  // --- 4. BUSCA MANUAL (Ao clicar na lupa ou Enter) ---
+  const handleSearch = (event) => {
     event.preventDefault();
-    if (!searchTerm) {
-      setMessage({ type: 'error', text: 'Por favor, digite um termo para buscar.' });
-      setResults([]);
-      return;
-    }
-    setIsLoading(true);
-    setMessage(null);
-    setResults([]);
-    try {
-      const data = await apiService.searchBooks(searchTerm);
-      if (data.length === 0) {
-        setMessage({ type: 'info', text: 'Nenhum livro encontrado para este termo.' });
-      } else {
-        setResults(data);
-      }
-    } catch (error) {
-      setMessage({ type: 'error', text: error.message || 'Erro ao buscar livros.' });
-    } finally {
-      setIsLoading(false);
-    }
+    fetchBooks(searchTerm); // Chama com o termo digitado
   };
 
-  // 10. FUNÇÕES PARA CONTROLAR O DIALOG
+  // Funções do Dialog de Exclusão
   const handleClickOpenDelete = (livro) => {
-    setBookToDelete(livro); // Guarda o livro
-    setOpenConfirm(true); // Abre o dialog
+    setBookToDelete(livro);
+    setOpenConfirm(true);
   };
 
   const handleCloseDelete = () => {
     setOpenConfirm(false);
-    setBookToDelete(null); // Limpa o livro
+    setBookToDelete(null);
   };
 
-  // 11. FUNÇÃO PARA CONFIRMAR A EXCLUSÃO
   const handleConfirmDelete = async () => {
     if (!bookToDelete) return;
-
     setMessage(null);
     
     try {
       await apiService.deleteBook(bookToDelete.id);
       
-      // Remove o livro da lista de resultados NA TELA
+      // Remove da lista visualmente
       setResults(results.filter(b => b.id !== bookToDelete.id));
       
       setMessage({ type: 'success', text: `Livro "${bookToDelete.titulo}" deletado com sucesso.` });
@@ -105,10 +109,9 @@ export default function Acervo() {
     } catch (error) {
       setMessage({ type: 'error', text: error.message || 'Erro ao deletar livro.' });
     } finally {
-      handleCloseDelete(); // Fecha o dialog
+      handleCloseDelete();
     }
   };
-
 
   return (
     <Box sx={{ display: 'flex' }}>
@@ -158,18 +161,18 @@ export default function Acervo() {
               <SearchIcon />
             </Avatar>
             <Typography component="h1" variant="h5" sx={{ fontWeight: 600 }}>
-              Buscar no Acervo
+              Acervo Completo
             </Typography>
             <Box component="form" onSubmit={handleSearch} sx={{ width: '100%', mt: 2 }}>
               <TextField
                 fullWidth
                 id="search"
-                label="Buscar por Título ou Autor"
+                label="Filtrar por Título ou Autor" // Mudei o label para ficar mais claro
                 name="search"
-                autoFocus
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 disabled={isLoading}
+                placeholder="Deixe vazio para ver todos"
                 InputProps={{
                   endAdornment: (
                     <InputAdornment position="end">
@@ -193,14 +196,19 @@ export default function Acervo() {
             </Alert>
           )}
 
-          {results.length > 0 && (
+          {/* Agora a tabela aparece se tiver resultados OU se estiver carregando (para não piscar) */}
+          {(results.length > 0 || isLoading) && (
             <Paper
               elevation={3}
               sx={{ padding: { xs: 2, sm: 3 }, borderRadius: 2, width: '100%' }}
             >
-              <Typography variant="h6" gutterBottom>
-                Resultados da Busca
-              </Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h6">
+                  Livros Cadastrados
+                </Typography>
+                <Chip label={`Total: ${results.length}`} color="default" />
+              </Box>
+
               <TableContainer>
                 <Table>
                   <TableHead>
@@ -212,8 +220,9 @@ export default function Acervo() {
                     </TableRow>
                   </TableHead>
                   <TableBody>
+                    {/* Se estiver carregando e não tiver resultados, mostra esqueleto ou nada */}
                     {results.map((livro) => (
-                      <TableRow key={livro.id}>
+                      <TableRow key={livro.id} hover>
                         <TableCell>{livro.titulo}</TableCell>
                         <TableCell>{livro.autor}</TableCell>
                         <TableCell>
@@ -221,6 +230,7 @@ export default function Acervo() {
                             label={livro.status}
                             color={livro.status === 'Disponível' ? 'success' : 'warning'}
                             size="small"
+                            variant="outlined"
                           />
                         </TableCell>
                         <TableCell align="center">
@@ -229,15 +239,16 @@ export default function Acervo() {
                               component={RouterLink}
                               to={`/editar-livro/${livro.id}`}
                               color="primary"
+                              size="small"
                             >
                               <EditIcon />
                             </IconButton>
                           </Tooltip>
-                          {/* 12. BOTÃO DE DELETAR */}
                           <Tooltip title="Deletar Livro">
                             <IconButton
                               onClick={() => handleClickOpenDelete(livro)}
                               color="error"
+                              size="small"
                             >
                               <DeleteIcon />
                             </IconButton>
@@ -253,7 +264,7 @@ export default function Acervo() {
         </Container>
       </Box>
 
-      {/* 13. DIALOG DE CONFIRMAÇÃO */}
+      {/* Dialog de Confirmação mantém igual */}
       <Dialog
         open={openConfirm}
         onClose={handleCloseDelete}

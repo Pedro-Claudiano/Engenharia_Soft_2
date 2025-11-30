@@ -40,21 +40,18 @@ CREATE TABLE `livros` (
 CREATE TABLE `emprestimos` (
   `id` INT NOT NULL AUTO_INCREMENT,
   
-  /* IDs que ligam às outras tabelas */
-  `id_usuario` INT NOT NULL, 
+  `id_cliente` INT NOT NULL, /* <--- MUDOU DE id_usuario PARA id_cliente */
   `id_livro` INT NOT NULL,
   
-  /* Datas */
   `data_emprestimo` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `data_devolucao_prevista` DATE NOT NULL,
   `data_devolucao_real` DATE NULL, 
   
   PRIMARY KEY (`id`),
   
-  /* Conexões (Foreign Keys) */
-  CONSTRAINT `fk_emprestimo_usuario`
-    FOREIGN KEY (`id_usuario`)
-    REFERENCES `usuarios` (`id`)
+  CONSTRAINT `fk_emprestimo_cliente`
+    FOREIGN KEY (`id_cliente`)
+    REFERENCES `clientes` (`id`) /* <--- APONTA PARA CLIENTES */
     ON DELETE RESTRICT
     ON UPDATE CASCADE,
 
@@ -63,4 +60,12 @@ CREATE TABLE `emprestimos` (
     REFERENCES `livros` (`id`)
     ON DELETE RESTRICT
     ON UPDATE CASCADE
+);
+
+CREATE TABLE `clientes` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `nome` VARCHAR(255) NOT NULL,
+  `cpf` VARCHAR(14) NOT NULL UNIQUE, /* CPF deve ser único */
+  `data_cadastro` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
 );

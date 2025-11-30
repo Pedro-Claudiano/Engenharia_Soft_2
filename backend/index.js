@@ -158,16 +158,15 @@ app.post('/api/books', async (req, res) => {
   }
 });
 
-/*
- * ==========================================================
- * ROTA 4 — CRIAR EMPRÉSTIMO
+/* * ==========================================================
+ * ROTA 4 — CRIAR EMPRÉSTIMO (ATUALIZADO PARA CLIENTE)
  * ==========================================================
  */
 app.post('/api/loans', async (req, res) => {
   try {
-    const { userId, bookId } = req.body;
+    const { clientId, bookId } = req.body; // <--- AGORA É clientId
 
-    // 1. Verificar se o livro tem estoque disponível
+    // 1. Verificar estoque
     const [livro] = await db.query('SELECT quantidade_estoque FROM livros WHERE id = ?', [bookId]);
     
     if (livro.length === 0) return res.status(404).json({ message: 'Livro não encontrado.' });
@@ -175,16 +174,21 @@ app.post('/api/loans', async (req, res) => {
       return res.status(400).json({ message: 'Livro indisponível no estoque.' });
     }
 
-    // 2. Criar o empréstimo
+    // 2. Verificar se o cliente existe
+    const [cliente] = await db.query('SELECT id FROM clientes WHERE id = ?', [clientId]);
+    if (cliente.length === 0) return res.status(404).json({ message: 'Cliente não encontrado.' });
+
+    // 3. Criar o empréstimo
     const dataDevolucao = new Date();
     dataDevolucao.setDate(dataDevolucao.getDate() + 15);
 
+    // Repare que usamos id_cliente agora
     await db.query(
-      'INSERT INTO emprestimos (id_usuario, id_livro, data_devolucao_prevista) VALUES (?, ?, ?)',
-      [userId, bookId, dataDevolucao]
+      'INSERT INTO emprestimos (id_cliente, id_livro, data_devolucao_prevista) VALUES (?, ?, ?)',
+      [clientId, bookId, dataDevolucao]
     );
 
-    // 3. DIMINUIR O ESTOQUE DO LIVRO <-- O PULO DO GATO
+    // 4. Diminuir estoque
     await db.query('UPDATE livros SET quantidade_estoque = quantidade_estoque - 1 WHERE id = ?', [bookId]);
 
     res.status(201).json({ message: 'Empréstimo realizado com sucesso!' });
@@ -197,29 +201,27 @@ app.post('/api/loans', async (req, res) => {
 
 /*
  * ==========================================================
- * ROTA 5 — LISTAR EMPRÉSTIMOS (100% compatível com seu frontend)
+ * ROTA 5 — LISTAR EMPRÉSTIMOS (ATUALIZADO PARA CLIENTE)
  * ==========================================================
  */
 app.get('/api/loans', async (req, res) => {
   try {
-
     const query = `
-      SELECT
-        e.id,
-        e.data_emprestimo,
-        e.data_devolucao_prevista,
-        e.data_devolvido,
-        COALESCE(u.nome, u.email) AS nome_usuario,
-        u.email AS email_usuario,
+      SELECT 
+        e.id, 
+        e.data_emprestimo, 
+        e.data_devolucao_prevista, 
+        e.data_devolucao_real AS data_devolvido,
+        c.nome AS nome_cliente,
+        c.cpf AS cpf_cliente,
         l.titulo AS titulo_livro
       FROM emprestimos e
-      INNER JOIN usuarios u ON e.id_usuario = u.id
+      INNER JOIN clientes c ON e.id_cliente = c.id  /* <--- JOIN COM CLIENTES */
       INNER JOIN livros l ON e.id_livro = l.id
       ORDER BY e.data_emprestimo DESC
     `;
 
     const [loans] = await db.query(query);
-
     res.status(200).json(loans);
 
   } catch (error) {
@@ -230,23 +232,23 @@ app.get('/api/loans', async (req, res) => {
 
 /*
  * ==========================================================
- * ROTA 6 — DEVOLVER LIVRO
+ * ROTA 6 — DEVOLVER LIVRO (IGUAL, SÓ MANTENDO AQUI PRA GARANTIR)
  * ==========================================================
  */
 app.put('/api/loans/:id/devolver', async (req, res) => {
   try {
     const emprestimoId = req.params.id;
 
-    // 1. Pegar os dados do empréstimo para saber QUAL livro devolver
-    const [emprestimo] = await db.query('SELECT id_livro, data_devolvido FROM emprestimos WHERE id = ?', [emprestimoId]);
+    // A lógica de devolução é a mesma, só verifica se já foi devolvido
+    const [emprestimo] = await db.query('SELECT id_livro, data_devolucao_real FROM emprestimos WHERE id = ?', [emprestimoId]);
 
     if (emprestimo.length === 0) return res.status(404).json({ message: "Empréstimo não encontrado." });
-    if (emprestimo[0].data_devolvido !== null) return res.status(400).json({ message: "Este livro já foi devolvido." });
+    if (emprestimo[0].data_devolucao_real !== null) return res.status(400).json({ message: "Este livro já foi devolvido." });
 
-    // 2. Marcar como devolvido
-    await db.query("UPDATE emprestimos SET data_devolvido = NOW() WHERE id = ?", [emprestimoId]);
+    // Atualiza data_devolucao_real
+    await db.query("UPDATE emprestimos SET data_devolucao_real = NOW() WHERE id = ?", [emprestimoId]);
 
-    // 3. AUMENTAR O ESTOQUE DO LIVRO DE VOLTA
+    // Devolve estoque
     await db.query('UPDATE livros SET quantidade_estoque = quantidade_estoque + 1 WHERE id = ?', [emprestimo[0].id_livro]);
 
     res.status(200).json({ message: "Livro devolvido e estoque atualizado!" });
@@ -256,6 +258,189 @@ app.put('/api/loans/:id/devolver', async (req, res) => {
     res.status(500).json({ message: "Erro ao devolver livro." });
   }
 });
+
+/*
+ * ==========================================================
+ * ROTA 7 — BUSCAR LIVROS (Faltava isso!)
+ * ==========================================================
+ */
+app.get('/api/books', async (req, res) => {
+  try {
+    const searchTerm = req.query.q || ''; // Pega o termo da URL (ex: ?q=Harry)
+
+    let query = `
+      SELECT id, titulo, autor, isbn, quantidade_estoque 
+      FROM livros
+    `;
+    
+    let params = [];
+
+    // Se tiver termo de busca, filtra. Se não, traz tudo.
+    if (searchTerm) {
+      query += ' WHERE titulo LIKE ? OR autor LIKE ?';
+      params = [`%${searchTerm}%`, `%${searchTerm}%`];
+    }
+
+    const [rows] = await db.query(query, params);
+
+    // TRUQUE: O Frontend espera um campo "status", mas o banco tem "quantidade_estoque".
+    // Vamos converter isso aqui antes de enviar.
+    const resultados = rows.map(livro => ({
+      ...livro,
+      status: livro.quantidade_estoque > 0 ? 'Disponível' : 'Indisponível' 
+    }));
+
+    res.status(200).json(resultados);
+
+  } catch (error) {
+    console.error("Erro na busca:", error);
+    res.status(500).json({ message: 'Erro ao buscar livros.' });
+  }
+});
+
+/*
+ * ==========================================================
+ * ROTA 8 — DELETAR LIVRO (Adicione isto ao index.js)
+ * ==========================================================
+ */
+app.delete('/api/books/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Tenta deletar o livro
+    const [result] = await db.query('DELETE FROM livros WHERE id = ?', [id]);
+
+    // Se nenhuma linha foi afetada, o livro não existia
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Livro não encontrado.' });
+    }
+
+    res.status(200).json({ message: 'Livro deletado com sucesso.' });
+
+  } catch (error) {
+    console.error("Erro ao deletar:", error);
+
+    // DICA DE OURO: Se o livro já foi emprestado, o banco vai bloquear a exclusão
+    // por causa da "Foreign Key". Vamos tratar esse erro para o usuário entender.
+    if (error.code === 'ER_ROW_IS_REFERENCED_2') {
+      return res.status(400).json({ 
+        message: 'Não é possível deletar este livro pois ele está vinculado a empréstimos (histórico).' 
+      });
+    }
+
+    res.status(500).json({ message: 'Erro ao deletar livro.' });
+  }
+});
+
+/*
+ * ==========================================================
+ * ROTA 9 — PEGAR UM ÚNICO LIVRO (Para a tela de Edição)
+ * ==========================================================
+ */
+app.get('/api/books/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const [rows] = await db.query('SELECT * FROM livros WHERE id = ?', [id]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'Livro não encontrado.' });
+    }
+
+    res.status(200).json(rows[0]);
+
+  } catch (error) {
+    console.error("Erro ao buscar livro:", error);
+    res.status(500).json({ message: 'Erro ao buscar dados do livro.' });
+  }
+});
+
+/*
+ * ==========================================================
+ * ROTA 10 — ATUALIZAR LIVRO (Para salvar a edição)
+ * ==========================================================
+ */
+app.put('/api/books/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { titulo, autor, isbn } = req.body;
+
+    // Atualiza os dados no banco
+    const [result] = await db.query(
+      'UPDATE livros SET titulo = ?, autor = ?, isbn = ? WHERE id = ?',
+      [titulo, autor, isbn, id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Livro não encontrado para atualizar.' });
+    }
+
+    res.status(200).json({ message: 'Livro atualizado com sucesso!' });
+
+  } catch (error) {
+    console.error("Erro ao atualizar:", error);
+    res.status(500).json({ message: 'Erro ao atualizar livro.' });
+  }
+});
+
+/* * ==========================================================
+ * ROTAS DE CLIENTES (LEITORES) - ADICIONE ISTO!
+ * ==========================================================
+ */
+
+// 1. Listar Clientes
+app.get('/api/clients', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM clientes ORDER BY nome ASC');
+    res.status(200).json(rows);
+  } catch (error) {
+    console.error("Erro ao listar clientes:", error);
+    res.status(500).json({ message: 'Erro ao buscar clientes.' });
+  }
+});
+
+// 2. Cadastrar Cliente
+app.post('/api/clients', async (req, res) => {
+  try {
+    const { nome, cpf } = req.body;
+    if (!nome || !cpf) return res.status(400).json({ message: 'Nome e CPF são obrigatórios.' });
+
+    await db.query('INSERT INTO clientes (nome, cpf) VALUES (?, ?)', [nome, cpf]);
+    res.status(201).json({ message: 'Cliente cadastrado com sucesso!' });
+  } catch (error) {
+    console.error(error);
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ message: 'CPF já cadastrado.' });
+    }
+    res.status(500).json({ message: 'Erro ao cadastrar cliente.' });
+  }
+});
+
+// 3. Atualizar Cliente
+app.put('/api/clients/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { nome, cpf } = req.body;
+    
+    await db.query('UPDATE clientes SET nome = ?, cpf = ? WHERE id = ?', [nome, cpf, id]);
+    res.status(200).json({ message: 'Cliente atualizado!' });
+  } catch (error) {
+    res.status(500).json({ message: 'Erro ao atualizar cliente.' });
+  }
+});
+
+// 4. Deletar Cliente
+app.delete('/api/clients/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await db.query('DELETE FROM clientes WHERE id = ?', [id]);
+    res.status(200).json({ message: 'Cliente removido.' });
+  } catch (error) {
+    // Se o cliente tiver empréstimos, vai dar erro de FK (isso é bom)
+    res.status(500).json({ message: 'Não é possível excluir este cliente (provavelmente possui histórico).' });
+  }
+});
+
 
 /*
  * ==========================================================

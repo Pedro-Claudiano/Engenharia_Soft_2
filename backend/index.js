@@ -54,15 +54,16 @@ ensureDatabaseStructure();
 
 /*
  * ==========================================================
- * ROTA 1 — REGISTRO DE USUÁRIO
+ * ROTA 1 — REGISTRO DE USUÁRIO (ATUALIZADA COM NOME)
  * ==========================================================
  */
 app.post('/api/register', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    // 1. Agora esperamos o 'nome' também
+    const { nome, email, password } = req.body;
 
-    if (!email || !password)
-      return res.status(400).json({ message: 'Dados incompletos.' });
+    if (!nome || !email || !password)
+      return res.status(400).json({ message: 'Dados incompletos. Nome, email e senha são obrigatórios.' });
 
     const [exists] = await db.query(
       'SELECT id FROM usuarios WHERE email = ?',
@@ -74,9 +75,10 @@ app.post('/api/register', async (req, res) => {
 
     const hash = await bcrypt.hash(password, 10);
 
+    // 2. Inserimos o nome no banco
     await db.query(
-      'INSERT INTO usuarios (email, senha) VALUES (?, ?)',
-      [email, hash]
+      'INSERT INTO usuarios (nome, email, senha) VALUES (?, ?, ?)',
+      [nome, email, hash]
     );
 
     res.status(201).json({ message: 'Usuário registrado!' });
@@ -192,7 +194,7 @@ app.get('/api/loans', async (req, res) => {
         e.data_emprestimo,
         e.data_devolucao_prevista,
         e.data_devolvido,
-        u.email AS nome_usuario,
+        COALESCE(u.nome, u.email) AS nome_usuario,
         u.email AS email_usuario,
         l.titulo AS titulo_livro
       FROM emprestimos e

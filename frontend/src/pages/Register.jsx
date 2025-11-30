@@ -18,6 +18,7 @@ import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { apiService } from '../services/apiService'
 
 export default function Register() {
+  const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -42,7 +43,7 @@ export default function Register() {
     try {
       // 2. LÓGICA DE SIMULAÇÃO REMOVIDA
       // Agora apenas chama o apiService
-      await apiService.register(email, password);
+      await apiService.register(nome, email, password);
 
       // 3. Sucesso!
       setMessage({ type: 'success', text: 'Conta criada com sucesso! Redirecionando para o login...' });
@@ -83,6 +84,17 @@ export default function Register() {
       
       <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3, width: '100%' }}>
         <Stack spacing={2}>
+          <TextField
+            required
+            fullWidth
+            id="nome"
+            label="Nome Completo"
+            name="nome"
+            autoComplete="name"
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+            disabled={isLoading}
+          />
           <TextField
             required
             fullWidth

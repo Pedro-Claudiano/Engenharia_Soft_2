@@ -43,7 +43,8 @@ export default function Emprestimos() {
       const data = await apiService.getLoans();
       setEmprestimos(data);
     } catch (error) {
-      setMessage({ type: 'error', text: 'Erro ao carregar empréstimos.' });
+      // O '||' serve como um "ou", caso o erro não tenha mensagem, usa a fixa.
+      setMessage({ type: 'error', text: error.message || 'Erro ao devolver livro.' });
     }
   };
 
@@ -69,7 +70,8 @@ export default function Emprestimos() {
       fetchEmprestimos();
 
     } catch (error) {
-      setMessage({ type: 'error', text: 'Erro ao registrar empréstimo.' });
+      // O '||' serve como um "ou", caso o erro não tenha mensagem, usa a fixa.
+      setMessage({ type: 'error', text: error.message || 'Erro ao devolver livro.' });
     } finally {
       setIsLoading(false);
     }
@@ -86,7 +88,8 @@ export default function Emprestimos() {
       fetchEmprestimos(); // Atualiza lista — emprestimo some da tabela
 
     } catch (error) {
-      setMessage({ type: 'error', text: 'Erro ao devolver livro.' });
+      // O '||' serve como um "ou", caso o erro não tenha mensagem, usa a fixa.
+      setMessage({ type: 'error', text: error.message || 'Erro ao devolver livro.' });
     }
   };
 

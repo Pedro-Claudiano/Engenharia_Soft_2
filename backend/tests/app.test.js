@@ -40,7 +40,8 @@ describe('Testes Completos da API', () => {
 
       const res = await request(app)
         .post('/api/register')
-        .send({ email: 'novo@teste.com', password: '123' });
+        // ADICIONE O NOME AQUI:
+        .send({ nome: 'Usuario Teste', email: 'novo@teste.com', password: '123' });
 
       expect(res.statusCode).toEqual(201);
     });
@@ -50,7 +51,8 @@ describe('Testes Completos da API', () => {
 
       const res = await request(app)
         .post('/api/register')
-        .send({ email: 'existe@teste.com', password: '123' });
+        // ADICIONE O NOME AQUI TAMBÉM (para não cair no erro 400 de dados incompletos):
+        .send({ nome: 'Usuario Duplicado', email: 'existe@teste.com', password: '123' });
 
       expect(res.statusCode).toEqual(409);
     });

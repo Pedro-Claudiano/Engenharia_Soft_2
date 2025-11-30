@@ -6,11 +6,11 @@ const BASE_URL = 'http://localhost:3001/api';
    USUÁRIO
 ============================ */
 
-async function register(email, password) {
+async function register(nome, email, password) { // <--- Adicione 'nome' aqui
   const response = await fetch(`${BASE_URL}/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ nome, email, password }), // <--- E aqui
   });
 
   const data = await response.json();

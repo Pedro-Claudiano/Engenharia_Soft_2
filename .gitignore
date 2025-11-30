@@ -16,3 +16,8 @@ frontend/dist
 
 # Ignora o arquivo de senhas do backend
 backend/.env
+
+# Ignora relatórios de testes (Jest)
+coverage/
+backend/coverage/
+frontend/coverage/

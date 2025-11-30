@@ -128,25 +128,32 @@ app.post('/api/login', async (req, res) => {
 
 /*
  * ==========================================================
- * ROTA 3 — CADASTRO DE LIVRO
+ * ROTA 3 — CADASTRO DE LIVRO (Atualizada com Estoque)
  * ==========================================================
  */
 app.post('/api/books', async (req, res) => {
   try {
-    const { titulo, autor, isbn } = req.body;
+    // 1. Agora aceitamos 'quantidade' também
+    // Se o frontend não mandar quantidade, assumimos 1
+    const { titulo, autor, isbn, quantidade } = req.body;
+    const qtdEstoque = quantidade ? parseInt(quantidade) : 1;
 
     if (!titulo || !autor || !isbn)
       return res.status(400).json({ message: 'Dados incompletos.' });
 
+    // 2. Inserimos na coluna 'quantidade_estoque'
     const [result] = await db.query(
-      "INSERT INTO livros (titulo, autor, isbn) VALUES (?, ?, ?)",
-      [titulo, autor, isbn]
+      "INSERT INTO livros (titulo, autor, isbn, quantidade_estoque) VALUES (?, ?, ?, ?)",
+      [titulo, autor, isbn, qtdEstoque]
     );
 
     res.status(201).json({ message: 'Livro criado!', bookId: result.insertId });
 
   } catch (error) {
     console.error(error);
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ message: 'Erro: Já existe um livro com este ISBN.' });
+    }
     res.status(500).json({ message: 'Erro ao criar livro.' });
   }
 });
@@ -160,23 +167,31 @@ app.post('/api/loans', async (req, res) => {
   try {
     const { userId, bookId } = req.body;
 
-    if (!userId || !bookId)
-      return res.status(400).json({ message: 'Dados incompletos.' });
+    // 1. Verificar se o livro tem estoque disponível
+    const [livro] = await db.query('SELECT quantidade_estoque FROM livros WHERE id = ?', [bookId]);
+    
+    if (livro.length === 0) return res.status(404).json({ message: 'Livro não encontrado.' });
+    if (livro[0].quantidade_estoque <= 0) {
+      return res.status(400).json({ message: 'Livro indisponível no estoque.' });
+    }
 
+    // 2. Criar o empréstimo
     const dataDevolucao = new Date();
     dataDevolucao.setDate(dataDevolucao.getDate() + 15);
 
     await db.query(
-      `INSERT INTO emprestimos (id_usuario, id_livro, data_devolucao_prevista)
-       VALUES (?, ?, ?)`,
+      'INSERT INTO emprestimos (id_usuario, id_livro, data_devolucao_prevista) VALUES (?, ?, ?)',
       [userId, bookId, dataDevolucao]
     );
 
-    res.status(201).json({ message: 'Empréstimo realizado!' });
+    // 3. DIMINUIR O ESTOQUE DO LIVRO <-- O PULO DO GATO
+    await db.query('UPDATE livros SET quantidade_estoque = quantidade_estoque - 1 WHERE id = ?', [bookId]);
+
+    res.status(201).json({ message: 'Empréstimo realizado com sucesso!' });
 
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Erro ao criar empréstimo.' });
+    res.status(500).json({ message: 'Erro ao processar empréstimo.' });
   }
 });
 
@@ -222,20 +237,19 @@ app.put('/api/loans/:id/devolver', async (req, res) => {
   try {
     const emprestimoId = req.params.id;
 
-    const [rows] = await db.query(
-      "SELECT * FROM emprestimos WHERE id = ?",
-      [emprestimoId]
-    );
+    // 1. Pegar os dados do empréstimo para saber QUAL livro devolver
+    const [emprestimo] = await db.query('SELECT id_livro, data_devolvido FROM emprestimos WHERE id = ?', [emprestimoId]);
 
-    if (rows.length === 0)
-      return res.status(404).json({ message: "Empréstimo não encontrado." });
+    if (emprestimo.length === 0) return res.status(404).json({ message: "Empréstimo não encontrado." });
+    if (emprestimo[0].data_devolvido !== null) return res.status(400).json({ message: "Este livro já foi devolvido." });
 
-    await db.query(
-      "UPDATE emprestimos SET data_devolvido = NOW() WHERE id = ?",
-      [emprestimoId]
-    );
+    // 2. Marcar como devolvido
+    await db.query("UPDATE emprestimos SET data_devolvido = NOW() WHERE id = ?", [emprestimoId]);
 
-    res.status(200).json({ message: "Livro devolvido com sucesso!" });
+    // 3. AUMENTAR O ESTOQUE DO LIVRO DE VOLTA
+    await db.query('UPDATE livros SET quantidade_estoque = quantidade_estoque + 1 WHERE id = ?', [emprestimo[0].id_livro]);
+
+    res.status(200).json({ message: "Livro devolvido e estoque atualizado!" });
 
   } catch (error) {
     console.error("Erro na devolução:", error);

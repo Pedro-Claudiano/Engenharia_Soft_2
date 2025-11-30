@@ -35,12 +35,13 @@ async function login(email, password) {
 ============================ */
 
 async function createBook(bookData) {
-  const { titulo, autor, isbn } = bookData;
+  const { titulo, autor, isbn, quantidade } = bookData;
 
   const response = await fetch(`${BASE_URL}/books`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ titulo, autor, isbn }),
+    // Envia a quantidade junto no JSON
+    body: JSON.stringify({ titulo, autor, isbn, quantidade }),
   });
 
   const data = await response.json();

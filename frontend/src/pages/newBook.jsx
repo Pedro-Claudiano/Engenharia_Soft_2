@@ -17,7 +17,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import LibraryAddIcon from '@mui/icons-material/LibraryAdd';
 import { useNavigate } from 'react-router-dom';
-import { apiService } from '../services/apiService'; // 1. IMPORTA A FACHADA
+import { apiService } from '../services/apiService';
 
 export default function CadastrarLivro() {
   const navigate = useNavigate();
@@ -25,6 +25,9 @@ export default function CadastrarLivro() {
   const [titulo, setTitulo] = useState('');
   const [autor, setAutor] = useState('');
   const [isbn, setIsbn] = useState('');
+  
+  // 1. ESTADO NOVO PARA QUANTIDADE
+  const [quantidade, setQuantidade] = useState(1); // <--- NOVO (Começa com 1)
   
   const [message, setMessage] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -46,15 +49,24 @@ export default function CadastrarLivro() {
     setMessage(null);
 
     try {
-      // 2. LÓGICA MOVIDA PARA O APISERVICE
-      const bookData = { titulo, autor, isbn };
+      // 2. ENVIA A QUANTIDADE JUNTO
+      const bookData = { 
+        titulo, 
+        autor, 
+        isbn,
+        quantidade: parseInt(quantidade) // <--- NOVO (Converte para número)
+      };
+      
       await apiService.createBook(bookData);
 
       // Sucesso
       setMessage({ type: 'success', text: `Livro "${titulo}" cadastrado com sucesso!` });
+      
+      // Limpa os campos
       setTitulo('');
       setAutor('');
       setIsbn('');
+      setQuantidade(1); // <--- NOVO (Reseta para 1)
 
     } catch (error) {
       setMessage({ type: 'error', text: error.message || 'Erro ao cadastrar livro.' });
@@ -158,6 +170,22 @@ export default function CadastrarLivro() {
                 onChange={(e) => setIsbn(e.target.value)}
                 disabled={isLoading}
               />
+
+              {/* 3. CAMPO VISUAL NOVO PARA QUANTIDADE */}
+              <TextField 
+                margin="normal"
+                required
+                fullWidth
+                id="quantidade"
+                label="Quantidade em Estoque"
+                name="quantidade"
+                type="number"
+                InputProps={{ inputProps: { min: 1 } }} 
+                value={quantidade}
+                onChange={(e) => setQuantidade(e.target.value)}
+                disabled={isLoading}
+              />
+
               <Button
                 type="submit"
                 fullWidth

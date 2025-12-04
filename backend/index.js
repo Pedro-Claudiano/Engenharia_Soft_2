@@ -384,6 +384,22 @@ app.put('/api/books/:id', async (req, res) => {
 });
 
 /* * ==========================================================
+ * ROTA 11 — LISTAR USUÁRIOS (Simples)
+ * ==========================================================
+ */
+
+app.get('clients', async (req, res) => {
+  try {
+    // Busca na tabela 'clientes'
+    const [clientes] = await db.query('SELECT id, nome, email FROM clientes ORDER BY nome ASC'); 
+    res.status(200).json(clientes);
+  } catch (error) {
+    console.error("Erro ao listar clientes:", error);
+    res.status(500).json({ message: 'Erro ao buscar clientes' });
+  }
+});
+
+/* * ==========================================================
  * ROTAS DE CLIENTES (LEITORES) - ADICIONE ISTO!
  * ==========================================================
  */

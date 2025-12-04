@@ -6,7 +6,7 @@ import {
   Paper,
   AppBar,
   Toolbar,
-  TextField,
+  // TextField, // <--- REMOVIDO
   Stack,
   CircularProgress,
   Alert,
@@ -16,26 +16,36 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Container
+  Container,
+  // NOVOS COMPONENTES:
+  Select, 
+  MenuItem,
+  InputLabel,
+  FormControl
 } from '@mui/material';
 
 import KeyboardReturnIcon from '@mui/icons-material/KeyboardReturn';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/apiService';
 
 export default function Emprestimos() {
   const navigate = useNavigate();
 
-  // 1. Mudamos de userId para clientId
+  // 1. Estados Existentes
   const [formData, setFormData] = useState({ bookId: '', clientId: '' });
   const [emprestimos, setEmprestimos] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState(null);
 
+  // 2. NOVOS ESTADOS PARA LISTAS DO SELECT
+  const [livrosDisponiveis, setLivrosDisponiveis] = useState([]);
+  const [clientesDisponiveis, setClientesDisponiveis] = useState([]);
+
+
   useEffect(() => {
     fetchEmprestimos();
+    fetchListas(); // <--- NOVO: Carrega os dados para o Select
   }, []);
 
   const fetchEmprestimos = async () => {
@@ -47,27 +57,46 @@ export default function Emprestimos() {
     }
   };
 
+  // 3. NOVA FUNÇÃO: Carrega listas de Livros e Clientes
+  const fetchListas = async () => {
+    try {
+      const [booksData, clientsData] = await Promise.all([
+        apiService.getAllBooks(),
+        apiService.getClients() // <--- USA A FUNÇÃO QUE JÁ EXISTIA
+      ]);
+      setLivrosDisponiveis(booksData);
+      setClientesDisponiveis(clientsData);
+    } catch (error) {
+      console.error("Erro ao carregar listas:", error);
+      setMessage({ type: 'error', text: 'Erro ao carregar opções de seleção.' });
+    }
+  };
+
+
   const handleChange = (e) => {
     const { name, value } = e.target;
+    // O valor do Select é o ID, que é exatamente o que o formulário espera
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // A validação agora checa se o Select tem algum valor (ID)
     if (!formData.bookId || !formData.clientId) {
-      setMessage({ type: 'error', text: 'Preencha todos os campos.' });
+      setMessage({ type: 'error', text: 'Selecione o Livro e o Cliente.' });
       return;
     }
-
+    // ... O restante da lógica de envio (try/catch/finally) é MANTIDO
     try {
       setIsLoading(true);
-      // 2. Enviamos clientId para a API
       await apiService.createLoan(Number(formData.clientId), Number(formData.bookId));
 
       setMessage({ type: 'success', text: 'Empréstimo registrado com sucesso!' });
       setFormData({ bookId: '', clientId: '' });
       fetchEmprestimos();
+      // Opcional: Re-carregar listas para atualizar estoque exibido
+      fetchListas(); 
 
     } catch (error) {
       setMessage({ type: 'error', text: error.message || 'Erro ao registrar empréstimo.' });
@@ -82,7 +111,8 @@ export default function Emprestimos() {
     try {
       await apiService.devolverLoan(id);
       setMessage({ type: 'success', text: 'Livro devolvido com sucesso!' });
-      fetchEmprestimos(); 
+      fetchEmprestimos();
+      fetchListas(); // <--- Recarrega listas para atualizar estoque
     } catch (error) {
       setMessage({ type: 'error', text: error.message || 'Erro ao devolver livro.' });
     }
@@ -115,29 +145,48 @@ export default function Emprestimos() {
             <Typography variant="h5">Registrar Novo Empréstimo</Typography>
 
             <Alert severity="info">
-              Informe o ID do Livro e o ID do Cliente (Leitor).
+              Selecione o Livro e o Cliente (Leitor).
             </Alert>
-            
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <TextField
-                name="bookId"
-                type="number"
-                label="ID do Livro"
-                fullWidth
-                value={formData.bookId}
-                onChange={handleChange}
-                required
-              />
 
-              <TextField
-                name="clientId" // <--- Campo atualizado
-                type="number"
-                label="ID do Cliente" // <--- Label atualizado
-                fullWidth
-                value={formData.clientId} // <--- Valor atualizado
-                onChange={handleChange}
-                required
-              />
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              
+              {/* CAMPO DE LIVRO: AGORA É UM SELECT */}
+              <FormControl fullWidth required disabled={isLoading}>
+                <InputLabel id="select-livro-label">Selecione o Livro</InputLabel>
+                <Select
+                  labelId="select-livro-label"
+                  name="bookId"
+                  value={formData.bookId}
+                  label="Selecione o Livro"
+                  onChange={handleChange}
+                >
+                  {livrosDisponiveis.map((livro) => (
+                    <MenuItem key={livro.id} value={livro.id} disabled={livro.quantidade_estoque === 0}>
+                      {livro.titulo} (Estoque: {livro.quantidade_estoque})
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              {/* CAMPO DE CLIENTE: AGORA É UM SELECT */}
+              <FormControl fullWidth required disabled={isLoading}>
+                <InputLabel id="select-cliente-label">Selecione o Cliente</InputLabel>
+                <Select
+                  labelId="select-cliente-label"
+                  name="clientId"
+                  value={formData.clientId}
+                  label="Selecione o Cliente"
+                  onChange={handleChange}
+                >
+                  {clientesDisponiveis.map((cliente) => (
+                    <MenuItem key={cliente.id} value={cliente.id}>
+                      {/* O backend deve retornar nome, mas fallback para email/ID */}
+                      {cliente.nome ? cliente.nome : `ID: ${cliente.id}`} 
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              
             </Stack>
 
             <Button
@@ -165,7 +214,7 @@ export default function Emprestimos() {
                 <TableRow>
                   <TableCell><strong>ID</strong></TableCell>
                   <TableCell><strong>Livro</strong></TableCell>
-                  <TableCell><strong>Cliente</strong></TableCell> {/* <--- Atualizado */}
+                  <TableCell><strong>Cliente</strong></TableCell>
                   <TableCell><strong>Data Empréstimo</strong></TableCell>
                   <TableCell><strong>Devolução Prevista</strong></TableCell>
                   <TableCell align="center"><strong>Ações</strong></TableCell>
@@ -179,13 +228,14 @@ export default function Emprestimos() {
                     <TableRow key={emp.id} hover>
                       <TableCell>{emp.id}</TableCell>
                       <TableCell>{emp.titulo_livro}</TableCell>
-                      {/* 3. Exibimos nome_cliente em vez de nome_usuario */}
+                      
                       <TableCell>
                         {emp.nome_cliente} 
                         <Typography variant="caption" display="block" color="text.secondary">
                           CPF: {emp.cpf_cliente}
                         </Typography>
                       </TableCell>
+                      
                       <TableCell>{formatarData(emp.data_emprestimo)}</TableCell>
                       <TableCell>{formatarData(emp.data_devolucao_prevista)}</TableCell>
 

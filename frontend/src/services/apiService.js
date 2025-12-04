@@ -116,10 +116,18 @@ async function getBookById(id) {
 }
 
 async function forgotPassword(email) {
+  console.log(`Simulando envio para: ${email}`);
   await new Promise(resolve => setTimeout(resolve, 800));
   return { message: "Email enviado com sucesso." };
 }
 
+
+// Busca todos os livros (para o dropdown)
+async function getAllBooks() {
+  const response = await fetch(`${BASE_URL}/books`); // Já criamos essa rota de busca!
+  if (!response.ok) throw new Error('Erro ao buscar livros');
+  return await response.json();
+}
 
 /* ============================
    CLIENTES (LEITORES)
@@ -179,4 +187,5 @@ export const apiService = {
   createClient,
   updateClient,
   deleteClient,
+  getAllBooks,
 };

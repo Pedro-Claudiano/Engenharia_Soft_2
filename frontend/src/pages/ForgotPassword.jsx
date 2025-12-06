@@ -34,7 +34,7 @@ export default function ForgotPassword() {
       // Simula uma chamada de API para enviar o email
       await new Promise(resolve => setTimeout(resolve, 1500));
       setMessage({ type: 'success', text: 'Se um e-mail correspondente for encontrado, um link de redefinição será enviado.' });
-    } catch (error) {
+    } catch {
       setMessage({ type: 'error', text: 'Ocorreu um erro ao tentar enviar o e-mail. Tente novamente.' });
     } finally {
       setIsLoading(false);

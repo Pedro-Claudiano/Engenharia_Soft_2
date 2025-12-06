@@ -39,7 +39,7 @@ export default function Clientes() {
     try {
       const data = await apiService.getClients();
       setClientes(data);
-    } catch (error) {
+    } catch {
       setMessage({ type: 'error', text: 'Erro ao carregar clientes.' });
     } finally {
       setLoading(false);

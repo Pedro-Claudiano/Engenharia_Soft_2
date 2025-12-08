@@ -105,9 +105,6 @@ app.post('/api/login', async (req, res) => {
 
     const user = users[0];
 
-    // QUEBRADO: Sempre retorna erro mesmo com senha correta
-    return res.status(401).json({ message: 'Email ou senha inválidos.' });
-
     const ok = await bcrypt.compare(password, user.senha);
     if (!ok)
       return res.status(401).json({ message: 'Email ou senha inválidos.' });

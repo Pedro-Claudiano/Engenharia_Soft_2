@@ -21,3 +21,7 @@ backend/.env
 coverage/
 backend/coverage/
 frontend/coverage/
+
+# Documentação local (não enviar para o repositório)
+DOCUMENTACAO_CI_CD.md
+RESUMO_APRESENTACAO.md

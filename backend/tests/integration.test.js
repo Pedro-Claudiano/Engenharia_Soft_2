@@ -28,7 +28,8 @@ describe('TESTES DE INTEGRAÇÃO (Cenários de Uso Real)', () => {
   });
 
   // CENÁRIO 1: O Caminho Feliz do Empréstimo
-  it('Fluxo: Cliente pega livro com estoque -> Devolve livro -> Estoque é reposto', async () => {
+  // Ajuste de clareza na descrição do teste para fins acadêmicos
+  it('Valida o fluxo completo: cliente realiza empréstimo, devolve e estoque é restaurado', async () => {
     
     // --- ATO 1: PEGAR EMPRESTADO ---
     // Mock 1: Verifica Estoque (Dizemos que tem 5)
